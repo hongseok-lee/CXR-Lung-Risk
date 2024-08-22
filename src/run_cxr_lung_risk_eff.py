@@ -151,15 +151,19 @@ def run_cxr_lung_risk(config):
             ensemble.eval()
             size_to_ensemble[s] = ensemble
              
-        
+        imgs = ImageDataLoaders.from_df(df = results_df, path = test_set_dir,
+                                label_col = "Dummy", y_block = RegressionBlock, bs = 4,
+                                val_bs = 4, valid_col = "valid_col",
+                                item_tfms = Resize(224),
+                                batch_tfms = [Normalize.from_stats(*imagenet_stats)])
         size_to_preds = {} 
         with torch.no_grad():
             for s in [224]:
                 dl = size_to_dl[s]
                 ensemble = size_to_ensemble[s]
-                for batch in tqdm(dl):
+                for batch in tqdm(imgs.valid):
                     inputs, labels = batch
-                    print(np.array(inputs))
+                    # print(np.array(inputs))
                     print(np.array(inputs).shape)
                     inputs = inputs.to(device)
                     outputs = ensemble(inputs)
@@ -245,9 +249,8 @@ def run_cxr_lung_risk(config):
 
     size_to_pred = ensemble_predict(size_to_models, size_to_dl)
     
-    
-    for s in size_to_pred:
-        print(s, size_to_pred[s].shape)
+    predictions = size_to_pred[224]
+    print(predictions.shape)
     
     # lasso_intercept = 49.8484258
     # predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
