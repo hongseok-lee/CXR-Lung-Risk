@@ -170,7 +170,6 @@ def run_cxr_lung_risk(config):
                     preds = outputs.argmax(dim=-1)
                     
                     all_preds.extend(preds.cpu().numpy())
-                    all_labels.extend(labels.numpy())
                 size_to_preds[s] = all_preds
         
         return size_to_preds
