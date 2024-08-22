@@ -195,7 +195,7 @@ def run_cxr_lung_risk(config):
             raise ValueError(f"Architecture type: {model_arch} not supported. Please make sure the `model_spec` CSV is found in the working directory and can be accessed.")
 
     # 사용 예시
-    model_details_df = pd.read_csv('model_spec.csv')  # 모델 사양이 저장된 CSV 파일
+    model_details_df = pd.read_csv(model_details_fn)  # 모델 사양이 저장된 CSV 파일
     out_nodes = 1  # 출력 클래스 수 # csv 에 다 1임. 
 
     models = []
