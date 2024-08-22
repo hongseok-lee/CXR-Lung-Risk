@@ -21,6 +21,7 @@ import torch
 import pretrainedmodels
 import pandas as pd
 import fastai
+from tqdm import tqdm
 
 
 warnings.simplefilter(action='ignore')
@@ -158,8 +159,9 @@ def run_cxr_lung_risk(config):
             for s in [224]:
                 dl = size_to_ds[s]
                 ensemble = size_to_ensemble[s]
-                for batch in dl:
+                for batch in tqdm(dl):
                     inputs, labels = batch
+                    print(np.array(inputs))
                     inputs = inputs.to(device)
                     outputs = ensemble(inputs)
                     preds = outputs.argmax(dim=-1)
