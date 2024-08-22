@@ -249,7 +249,7 @@ def run_cxr_lung_risk(config):
     size_to_pred = ensemble_predict(size_to_models, size_to_dl)
     
     predictions = size_to_pred[224]
-    print(predictions.shape)
+    print(predictions)
     
     # lasso_intercept = 49.8484258
     # predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
