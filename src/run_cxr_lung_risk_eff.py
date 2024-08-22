@@ -249,16 +249,15 @@ def run_cxr_lung_risk(config):
     size_to_pred = ensemble_predict(size_to_models, size_to_dl)
     
     predictions = size_to_pred[224]
-    for p in predictions:
-        print(p.shape)
+    predictions = torch.concat(predictions, axis=0)[:,0]
     
-    # lasso_intercept = 49.8484258
-    # predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
+    lasso_intercept = 49.8484258
+    predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
     
-    # output_df['CXR_Lung_Risk'] = predictions
-    # output_df = output_df.drop(["valid_col", "Dummy", "Prediction"], axis = 1)
+    output_df['CXR_Lung_Risk'] = predictions
+    output_df = output_df.drop(["valid_col", "Dummy", "Prediction"], axis = 1)
 
-    # output_df.to_csv(out_file_path, index = False)
+    output_df.to_csv(out_file_path, index = False)
 
 if __name__ == "__main__":
     
