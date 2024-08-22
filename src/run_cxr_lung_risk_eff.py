@@ -14,6 +14,8 @@ import SimpleArchs
 from concurrent.futures import ThreadPoolExecutor
 from fastai.vision.all import *
 from sklearn.metrics import *
+from pathlib import Path
+
 
 warnings.simplefilter(action='ignore')
 
@@ -112,100 +114,147 @@ def run_cxr_lung_risk(config):
     model_number = model_details_df.shape[0]
     pred_arr = np.zeros((results_df.shape[0]-1, model_number))
     
-    # Pre-load all models
-    models = {}
-    for model_id, model_row in model_details_df.iterrows():
-        out_nodes = int(model_details_df.Num_Classes[model_id])
-        manual = False
-        size = int(model_details_df.Image_Size[model_id])
-        bs,val_bs = 4,4
-        if(int(model_details_df.Normalize[model_id])==0):
-            imgs = ImageDataLoaders.from_df(df = results_df, path = test_set_dir,
-                                        label_col = "Dummy", y_block = RegressionBlock, bs = bs,
-                                        val_bs = val_bs, valid_col = "valid_col",
-                                        item_tfms = Resize(size), batch_tfms = None)
+    
+    
+    from fastai.vision.all import *
+    from torch.utils.data import DataLoader
+    import torch
+    import pretrainedmodels
+    import pandas as pd
+
+    class EnsembleModel(nn.Module):
+        def __init__(self, models):
+            super().__init__()
+            self.models = nn.ModuleList(models)
+        
+        def forward(self, x):
+            outputs = [model(x) for model in self.models]
+            return torch.stack(outputs).mean(dim=0)
+
+    def create_ensemble_dataloader(size_to_ds, bs=64):
+        size_to_dl = []
+        for s, ds in size_to_ds.items():
+            size_to_dl[s] = DataLoader(ds, batch_size=bs, shuffle=False, num_workers=4, persistent_workers=True, pin_memory=True)
+        return size_to_dl 
+
+    def ensemble_predict(size_to_models, size_to_dl):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        all_preds = []
+        all_labels = []
+        dls = size_to_dl.values
+        
+        size_to_ensemble = {} 
+        for s in [16, 32, 64, 128, 256]:
+            models = size_to_models
+            ensemble = EnsembleModel(models).to(device)
+            ensemble.eval()
+            size_to_ensemble[s] = ensemble
+             
+        
+        size_to_preds = {} 
+        with torch.no_grad():
+            for s in [16, 32, 64, 128, 256]:
+                dl = size_to_ds[s]
+                ensemble = size_to_ensemble[s]
+                for batch in dl:
+                    inputs, labels = batch
+                    inputs = inputs.to(device)
+                    outputs = ensemble(inputs)
+                    preds = outputs.argmax(dim=-1)
+                    
+                    all_preds.extend(preds.cpu().numpy())
+                    all_labels.extend(labels.numpy())
+                size_to_preds[s] = all_preds
+        
+        return size_to_preds
+
+    def get_model(model_id, model_details_df, out_nodes):
+        model_arch = model_details_df.Architecture[model_id].lower()
+        
+        if model_arch == "inceptionv4":
+            def get_cadene_model(pretrained=True, model_name='inceptionv4'):
+                if pretrained:
+                    arch = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained='imagenet')
+                else:
+                    arch = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained=None)
+                return arch
+            
+            custom_head = create_head(nf=2048*2, n_out=out_nodes)
+            fastai_inceptionv4 = nn.Sequential(*list(get_cadene_model(model_name='inceptionv4').children())[:-2], custom_head)
+            return cnn_learner(DataLoaders(train=None, valid=None), get_cadene_model, n_out=out_nodes)
+        
+        elif model_arch == "resnet34":
+            return cnn_learner(DataLoaders(train=None, valid=None), fastai.vision.models.resnet34, n_out=out_nodes)
+        
+        elif model_arch == "tiny":
+            mdl = SimpleArchs.get_simple_model("Tiny", out_nodes)
+            return Learner(DataLoaders(train=None, valid=None), mdl)
+        
         else:
-            imgs = ImageDataLoaders.from_df(df = results_df, path = test_set_dir,
+            raise ValueError(f"Architecture type: {model_arch} not supported. Please make sure the `model_spec` CSV is found in the working directory and can be accessed.")
+
+    # 사용 예시
+    model_details_df = pd.read_csv('model_spec.csv')  # 모델 사양이 저장된 CSV 파일
+    out_nodes = 1  # 출력 클래스 수 # csv 에 다 1임. 
+
+    models = []
+    size_to_models = {
+        16:[],
+        32:[],
+        64:[],
+        128:[],
+        256:[],
+    }
+    for model_id in range(len(model_details_df)):
+        size = int(model_details_df.Image_Size[model_id])
+        learn = get_model(model_id, model_details_df, out_nodes)
+        # learn.load(f'model_{model_id}.pth')  # 각 모델의 가중치 로드
+        
+        learn.path = Path(mdl_dir.split("models")[0])
+        learn.load(mdl_name + "_" + str(model_id))
+        size_to_models[size].append(learn.model)
+        models.append(learn.model)
+
+    # 데이터 로더 생성 (실제 데이터셋으로 대체 필요)
+    # dls = DataLoaders(train=None, valid=None)  # 실제 데이터셋으로 초기화 필요
+    sizes = [
+                16,
+                32,
+                64,
+                128,
+                256
+            ]
+    
+    size_to_ds = {} 
+    bs,val_bs = 4,4
+    
+    for s in sizes:
+        dls = ImageDataLoaders.from_df(df = results_df, path = test_set_dir,
                                         label_col = "Dummy", y_block = RegressionBlock, bs = bs,
                                         val_bs = val_bs, valid_col = "valid_col",
                                         item_tfms = Resize(size),
                                         batch_tfms = [Normalize.from_stats(*imagenet_stats)])
-
-
-        
-        
-        try:
-            model_arch = model_details_df.Architecture[model_id].lower()
-        
-        # Cadene's pretrainedmodels InceptionV4 loading
-            if(model_arch == "inceptionv4"):
-                def get_model(pretrained = True, model_name = 'inceptionv4', **kwargs ): 
-                    if pretrained:
-                        arch = pretrainedmodels.__dict__[model_name](num_classes = 1000, pretrained = 'imagenet')
-                    else:
-                        arch = pretrainedmodels.__dict__[model_name](num_classes = 1000, pretrained = None)
-                    return arch
-
-                def get_cadene_model(pretrained=True, **kwargs ): 
-                    return fastai_inceptionv4
-
-                custom_head = create_head(nf = 2048*2, n_out = 37) 
-                fastai_inceptionv4 = nn.Sequential(*list(get_model(model_name = 'inceptionv4').children())[:-2], custom_head) 
-            
-            elif(model_arch == "resnet34"):
-                mdl = fastai.vision.models.resnet34
-            
-            elif(model_arch == "tiny"):
-                manual = True
-                mdl = SimpleArchs.get_simple_model("Tiny", out_nodes)
-
-            else:
-                print("Architecture type: " + model_arch + " not supported. " \
-                "Please, make sure the `model_spec` CSV is found in the working directory and can be accessed.")
-                quit()
-
-            if(model_arch == 'inceptionv4'):
-                learn = cnn_learner(imgs, get_cadene_model,n_out = out_nodes)
-
-            elif(manual):
-                learn = Learner(imgs,mdl)
-
-            else:
-                learn = cnn_learner(imgs, mdl, n_out = out_nodes)
-
-        except:
-            print("Architecture not found for model #: " + str(model_id))
-            sys.exit(0)
-
-
-        learn.path = Path(mdl_dir.split("models")[0])
-        learn.load(mdl_name + "_" + str(model_id))
-            
-        models[model_id] = learn
-            
-        
-        # model = load_model(model_row.Architecture.lower(), int(model_row.Num_Classes))
-        # model.load_state_dict(torch.load(os.path.join(config["mdl_dir"], f"{config['mdl_name']}_{model_id}.pth"), map_location=device))
-        # model.to(device).eval()
-        # models[model_id] = model
-
-    # Create an empty array of num_images x 20 (20-models-ensemble)
-    pred_arr = np.zeros((results_df.shape[0]-1, model_number))
-    for model_id, model_row in model_details_df.iterrows():
-        learn = models[model_id]
-        preds, y = learn.get_preds(ds_idx = 1, reorder = False)
-
-        # store the raw model predictions for all the subject in `test_set_dir`
-        pred_arr[:, model_id] = np.array(preds[:, 0])
-        
+        size_to_ds[s] = dls.valid.dataset
     
-    lasso_intercept = 49.8484258
-    predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
+ 
     
-    output_df['CXR_Lung_Risk'] = predictions
-    output_df = output_df.drop(["valid_col", "Dummy", "Prediction"], axis = 1)
+    
+    size_to_dl = create_ensemble_dataloader(size_to_ds)
 
-    output_df.to_csv(out_file_path, index = False)
+    size_to_pred = ensemble_predict(size_to_models, size_to_dl)
+    
+    
+    for s in size_to_pred:
+        print(s, size_to_pred[s].shape)
+    
+    # lasso_intercept = 49.8484258
+    # predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
+    
+    # output_df['CXR_Lung_Risk'] = predictions
+    # output_df = output_df.drop(["valid_col", "Dummy", "Prediction"], axis = 1)
+
+    # output_df.to_csv(out_file_path, index = False)
 
 if __name__ == "__main__":
     
