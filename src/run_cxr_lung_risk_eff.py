@@ -164,7 +164,7 @@ def run_cxr_lung_risk(config):
                 for batch in tqdm(imgs.valid):
                     inputs, labels = batch
                     # print(np.array(inputs))
-                    print(np.array(inputs).shape)
+                    print(inputs.shape)
                     inputs = inputs.to(device)
                     outputs = ensemble(inputs)
                     preds = outputs.argmax(dim=-1)
