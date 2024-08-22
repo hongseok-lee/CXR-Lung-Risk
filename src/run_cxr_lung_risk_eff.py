@@ -185,7 +185,7 @@ def run_cxr_lung_risk(config):
                     arch = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained=None)
                 return arch
             def get_cadene_model(pretrained=True, **kwargs):
-                fastai_inceptionv4
+                return fastai_inceptionv4
             custom_head = create_head(nf=2048*2, n_out=out_nodes)
             fastai_inceptionv4 = nn.Sequential(*list(_get_model(model_name='inceptionv4').children())[:-2], custom_head)
             return cnn_learner(imgs , get_cadene_model, n_out=out_nodes)
