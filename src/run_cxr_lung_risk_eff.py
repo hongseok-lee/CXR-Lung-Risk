@@ -133,7 +133,7 @@ def run_cxr_lung_risk(config):
             return torch.stack(outputs).mean(dim=0)
 
     def create_ensemble_dataloader(size_to_ds, bs=64):
-        size_to_dl = []
+        size_to_dl = {}
         for s, ds in size_to_ds.items():
             size_to_dl[s] = DataLoader(ds, batch_size=bs, shuffle=False, num_workers=4, persistent_workers=True, pin_memory=True)
         return size_to_dl 
