@@ -15,6 +15,11 @@ from concurrent.futures import ThreadPoolExecutor
 from fastai.vision.all import *
 from sklearn.metrics import *
 from pathlib import Path
+from fastai.vision.all import *
+from torch.utils.data import DataLoader
+import torch
+import pretrainedmodels
+import pandas as pd
 
 
 warnings.simplefilter(action='ignore')
@@ -116,11 +121,6 @@ def run_cxr_lung_risk(config):
     
     
     
-    from fastai.vision.all import *
-    from torch.utils.data import DataLoader
-    import torch
-    import pretrainedmodels
-    import pandas as pd
 
     class EnsembleModel(nn.Module):
         def __init__(self, models):
