@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 import torch
 import pretrainedmodels
 import pandas as pd
+import fastai
 
 
 warnings.simplefilter(action='ignore')
