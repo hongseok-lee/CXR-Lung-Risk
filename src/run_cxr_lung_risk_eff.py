@@ -147,7 +147,7 @@ def run_cxr_lung_risk(config):
         
         size_to_ensemble = {} 
         for s in [224]:
-            models = size_to_models
+            models = size_to_models[s]
             ensemble = EnsembleModel(models).to(device)
             ensemble.eval()
             size_to_ensemble[s] = ensemble
