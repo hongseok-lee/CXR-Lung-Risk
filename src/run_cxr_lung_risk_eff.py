@@ -170,29 +170,34 @@ def run_cxr_lung_risk(config):
         return size_to_preds
 
     def get_model(model_id, model_details_df, out_nodes):
+        imgs = ImageDataLoaders.from_df(df = results_df, path = test_set_dir,
+                                      label_col = "Dummy", y_block = RegressionBlock, bs = bs,
+                                      val_bs = val_bs, valid_col = "valid_col",
+                                      item_tfms = Resize(size),
+                                      batch_tfms = [Normalize.from_stats(*imagenet_stats)])
         model_arch = model_details_df.Architecture[model_id].lower()
         
         if model_arch == "inceptionv4":
-            def get_cadene_model(pretrained=True, model_name='inceptionv4'):
+            def get_model(pretrained=True, model_name='inceptionv4', **kwargs):
                 if pretrained:
                     arch = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained='imagenet')
                 else:
                     arch = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained=None)
                 return arch
-            
             custom_head = create_head(nf=2048*2, n_out=out_nodes)
-            fastai_inceptionv4 = nn.Sequential(*list(get_cadene_model(model_name='inceptionv4').children())[:-2], custom_head)
-            return cnn_learner(DataLoaders(train=None, valid=None), get_cadene_model, n_out=out_nodes)
+            fastai_inceptionv4 = nn.Sequential(*list(get_model(model_name='inceptionv4').children())[:-2], custom_head)
+            return cnn_learner(imgs , fastai_inceptionv4, n_out=out_nodes)
         
         elif model_arch == "resnet34":
-            return cnn_learner(DataLoaders(train=None, valid=None), fastai.vision.models.resnet34, n_out=out_nodes)
+            return cnn_learner(imgs, fastai.vision.models.resnet34, n_out=out_nodes)
         
         elif model_arch == "tiny":
             mdl = SimpleArchs.get_simple_model("Tiny", out_nodes)
-            return Learner(DataLoaders(train=None, valid=None), mdl)
+            return Learner(imgs, mdl)
         
         else:
-            raise ValueError(f"Architecture type: {model_arch} not supported. Please make sure the `model_spec` CSV is found in the working directory and can be accessed.")
+            return cnn_learner(imgs, mdl, n_out = out_nodes)
+            # raise ValueError(f"Architecture type: {model_arch} not supported. Please make sure the `model_spec` CSV is found in the working directory and can be accessed.")
 
     # 사용 예시
     model_details_df = pd.read_csv(model_details_fn)  # 모델 사양이 저장된 CSV 파일
