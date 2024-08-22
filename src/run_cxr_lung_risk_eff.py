@@ -144,8 +144,6 @@ def run_cxr_lung_risk(config):
         
         all_preds = []
         all_labels = []
-        dls = size_to_dl.values
-        
         size_to_ensemble = {} 
         for s in [224]:
             models = size_to_models[s]
@@ -157,7 +155,7 @@ def run_cxr_lung_risk(config):
         size_to_preds = {} 
         with torch.no_grad():
             for s in [224]:
-                dl = size_to_ds[s]
+                dl = size_to_dl[s]
                 ensemble = size_to_ensemble[s]
                 for batch in tqdm(dl):
                     inputs, labels = batch
