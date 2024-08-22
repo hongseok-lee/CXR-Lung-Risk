@@ -171,7 +171,7 @@ def run_cxr_lung_risk(config):
 
     def get_model(model_id, model_details_df, out_nodes):
         imgs = ImageDataLoaders.from_df(df = results_df, path = test_set_dir,
-                                      label_col = "Dummy", y_block = RegressionBlock, bs = bs,
+                                      label_col = "Dummy", y_block = RegressionBlock, bs =4,
                                       val_bs = val_bs, valid_col = "valid_col",
                                       item_tfms = Resize(size),
                                       batch_tfms = [Normalize.from_stats(*imagenet_stats)])
