@@ -145,7 +145,7 @@ def run_cxr_lung_risk(config):
         dls = size_to_dl.values
         
         size_to_ensemble = {} 
-        for s in [16, 32, 64, 128, 256]:
+        for s in [224]:
             models = size_to_models
             ensemble = EnsembleModel(models).to(device)
             ensemble.eval()
@@ -154,7 +154,7 @@ def run_cxr_lung_risk(config):
         
         size_to_preds = {} 
         with torch.no_grad():
-            for s in [16, 32, 64, 128, 256]:
+            for s in [224]:
                 dl = size_to_ds[s]
                 ensemble = size_to_ensemble[s]
                 for batch in dl:
@@ -207,11 +207,7 @@ def run_cxr_lung_risk(config):
 
     models = []
     size_to_models = {
-        16:[],
-        32:[],
-        64:[],
-        128:[],
-        256:[],
+        224:[]
     }
     for model_id in range(len(model_details_df)):
         size = int(model_details_df.Image_Size[model_id])
@@ -226,11 +222,7 @@ def run_cxr_lung_risk(config):
     # 데이터 로더 생성 (실제 데이터셋으로 대체 필요)
     # dls = DataLoaders(train=None, valid=None)  # 실제 데이터셋으로 초기화 필요
     sizes = [
-                16,
-                32,
-                64,
-                128,
-                256
+        224
             ]
     
     size_to_ds = {} 
