@@ -178,14 +178,14 @@ def run_cxr_lung_risk(config):
         model_arch = model_details_df.Architecture[model_id].lower()
         
         if model_arch == "inceptionv4":
-            def get_model(pretrained=True, model_name='inceptionv4', **kwargs):
+            def _get_model(pretrained=True, model_name='inceptionv4', **kwargs):
                 if pretrained:
                     arch = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained='imagenet')
                 else:
                     arch = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained=None)
                 return arch
             custom_head = create_head(nf=2048*2, n_out=out_nodes)
-            fastai_inceptionv4 = nn.Sequential(*list(get_model(model_name='inceptionv4').children())[:-2], custom_head)
+            fastai_inceptionv4 = nn.Sequential(*list(_get_model(model_name='inceptionv4').children())[:-2], custom_head)
             return cnn_learner(imgs , fastai_inceptionv4, n_out=out_nodes)
         
         elif model_arch == "resnet34":
