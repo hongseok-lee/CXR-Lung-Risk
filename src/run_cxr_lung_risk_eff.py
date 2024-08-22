@@ -131,7 +131,7 @@ def run_cxr_lung_risk(config):
         
         def forward(self, x):
             outputs = [model(x) for model in self.models]
-            return torch.stack(outputs).mean(dim=0)
+            return torch.stack(outputs)
 
     def create_ensemble_dataloader(size_to_ds, bs=64):
         size_to_dl = {}
@@ -167,7 +167,7 @@ def run_cxr_lung_risk(config):
                     print(inputs.shape)
                     inputs = inputs.to(device)
                     outputs = ensemble(inputs)
-                    preds = outputs.argmax(dim=-1)
+                    preds = outputs
                     
                     all_preds.extend(preds.cpu().numpy())
                 size_to_preds[s] = all_preds
