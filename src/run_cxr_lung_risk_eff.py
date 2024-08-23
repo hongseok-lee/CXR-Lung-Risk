@@ -161,14 +161,14 @@ def run_cxr_lung_risk(config):
             for s in [224]:
                 dl = size_to_dl[s]
                 ensemble = size_to_ensemble[s]
+                preds_list = []
                 for batch in tqdm(imgs.valid):
                     inputs, labels = batch
                     inputs = inputs.to(device)
                     outputs = ensemble(inputs)
                     preds = outputs
-                    
-                    all_preds.extend(preds.cpu().numpy())
-                size_to_preds[s] = all_preds
+                    preds_list.append(preds.cpu().numpy())
+                size_to_preds[s] = preds_list
         
         return size_to_preds
 
@@ -247,12 +247,14 @@ def run_cxr_lung_risk(config):
     size_to_pred = ensemble_predict(size_to_models, size_to_dl)
     
     predictions = size_to_pred[224]
-    results = []
-    for batch in predictions:
-        result = np.stack(batch, axis=1)
-        print(result.shape)
-        results.append(result)
-    predictions = np.concatenate(results, axis=0)
+    for p in preds_list:
+        print(p.shape)
+    # results = []
+    # for batch in predictions:
+    #     result = np.stack(batch, axis=1)
+    #     print(result.shape)
+    #     results.append(result)
+    # predictions = np.concatenate(results, axis=0)
     
         
     # predictions = np.concatenate(predictions, axis=0)[:,1]
