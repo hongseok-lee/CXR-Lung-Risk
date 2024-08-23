@@ -247,8 +247,9 @@ def run_cxr_lung_risk(config):
     size_to_pred = ensemble_predict(size_to_models, size_to_dl)
     
     predictions = size_to_pred[224]
-    for p in predictions:
-        print(p)
+    
+    predictions = np.concatenate(predictions, axis=1)[...,0]
+    predictions = np.transpose((1,0))
     # results = []
     # for batch in predictions:
     #     result = np.stack(batch, axis=1)
