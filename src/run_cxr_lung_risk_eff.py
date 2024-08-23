@@ -247,7 +247,7 @@ def run_cxr_lung_risk(config):
     size_to_pred = ensemble_predict(size_to_models, size_to_dl)
     
     predictions = size_to_pred[224]
-    for p in preds_list:
+    for p in predictions:
         print(p.shape)
     # results = []
     # for batch in predictions:
