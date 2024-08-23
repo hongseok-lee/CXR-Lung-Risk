@@ -266,7 +266,7 @@ def run_cxr_lung_risk(config):
     
     lasso_intercept = 49.8484258
     print('weight', ensemble_weights)
-    predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
+    predictions = np.matmul(predictions, ensemble_weights) + lasso_intercept
     
     output_df['CXR_Lung_Risk'] = predictions
     output_df = output_df.drop(["valid_col", "Dummy", "Prediction"], axis = 1)
