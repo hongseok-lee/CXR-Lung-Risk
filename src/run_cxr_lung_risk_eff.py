@@ -22,6 +22,7 @@ import pretrainedmodels
 import pandas as pd
 import fastai
 from tqdm import tqdm
+from torch.nn.parallel import parallel_apply
 
 
 warnings.simplefilter(action='ignore')
@@ -130,7 +131,9 @@ def run_cxr_lung_risk(config):
             self.models = nn.ModuleList(models)
         
         def forward(self, x):
-            outputs = [model(x) for model in self.models]
+            inputs = [x for _ in self.models]
+            outputs = parallel_apply(self.models, inputs) 
+            # outputs = [model(x) for model in self.models]
             return torch.stack(outputs)
 
     def create_ensemble_dataloader(size_to_ds, bs=64):
