@@ -248,7 +248,7 @@ def run_cxr_lung_risk(config):
     
     predictions = size_to_pred[224]
     
-    predictions = np.concatenate(predictions, axis=1)
+    predictions = np.concatenate(predictions, axis=1)[:,:,0]
     # predictions = np.transpose((1,0))
     # results = []
     # for batch in predictions:
