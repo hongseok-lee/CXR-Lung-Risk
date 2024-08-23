@@ -249,7 +249,9 @@ def run_cxr_lung_risk(config):
     predictions = size_to_pred[224]
     results = []
     for batch in predictions:
-        results.append(np.stack(batch, axis=1))
+        result = np.stack(batch, axis=1)
+        print(result.shape)
+        results.append(result)
     predictions = np.concatenate(results, axis=0)
     
         
