@@ -249,6 +249,7 @@ def run_cxr_lung_risk(config):
     predictions = size_to_pred[224]
     
     predictions = np.concatenate(predictions, axis=1)[:,:,0]
+    predictions = predictions.transpose((1,0))
     # predictions = np.transpose((1,0))
     # results = []
     # for batch in predictions:
@@ -261,9 +262,11 @@ def run_cxr_lung_risk(config):
     # predictions = np.concatenate(predictions, axis=0)[:,1]
     print(predictions.shape) 
     
+    print('pred', predictions)
+    
     lasso_intercept = 49.8484258
+    print('weight', ensemble_weights)
     predictions = np.matmul(pred_arr, ensemble_weights) + lasso_intercept
-    print(predictions)
     
     output_df['CXR_Lung_Risk'] = predictions
     output_df = output_df.drop(["valid_col", "Dummy", "Prediction"], axis = 1)
