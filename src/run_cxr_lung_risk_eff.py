@@ -248,8 +248,8 @@ def run_cxr_lung_risk(config):
     
     predictions = size_to_pred[224]
     
-    predictions = np.concatenate(predictions, axis=1)[...,0]
-    predictions = np.transpose((1,0))
+    predictions = np.concatenate(predictions, axis=1)
+    # predictions = np.transpose((1,0))
     # results = []
     # for batch in predictions:
     #     result = np.stack(batch, axis=1)
@@ -259,7 +259,6 @@ def run_cxr_lung_risk(config):
     
         
     # predictions = np.concatenate(predictions, axis=0)[:,1]
-    
     print(predictions.shape) 
     
     lasso_intercept = 49.8484258
